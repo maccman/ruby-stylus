@@ -1,7 +1,5 @@
 require 'execjs'
 require 'stylus/version'
-require 'stylus/tilt' if defined?(::Tilt)
-require 'stylus/railtie' if defined?(::Rails)
 
 ## Stylus
 #
@@ -117,3 +115,6 @@ module Stylus
   # require modules installed locally.
   ENV['NODE_PATH'] = "#{File.expand_path('node_modules')}:#{ENV['NODE_PATH']}"
 end
+
+require 'stylus/tilt' if defined?(::Tilt)
+require 'stylus/railtie' if defined?(::Rails)
