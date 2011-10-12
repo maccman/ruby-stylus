@@ -1,13 +1,26 @@
 ## Changelog
 
-### 0.2.1
-[Compare view](https://github.com/lucasmazza/ruby-stylus/compare/v0.2.0...master)
+### 0.3.0
+[Compare view](https://github.com/lucasmazza/ruby-stylus/compare/v0.2.2...master)
+
+* Added a `debug` configuration option, that enables the `linenos` and `firebug` flags on Stylus. Inside Rails, this configuration option will be copied from the `config.assets.debug`;
+* Added a global array `import` that handles other stylesheets to include on every compilation process;
+* Added a shorthand `Stylus.nib = true` to use the plugin and import it on every processed stylesheet.
+
+### 0.2.2 (2011-09-14)
+[Compare view](https://github.com/lucasmazza/ruby-stylus/compare/v0.2.1...v0.2.2)
+
+* ExecJS 1.2.5+ compatibility: Using a custom `ExternalRuntime`.
+
+### 0.2.1 (2011-08-30)
+[Compare view](https://github.com/lucasmazza/ruby-stylus/compare/v0.2.0...v0.2.1)
 
 * Removed a hack for a Sprockets loading order issue;
 * Testing on 1.9.2, REE and Rubinius thanks to [Travis CI](travis-ci.org/#!/lucasmazza/ruby-stylus);
-* Enables compression if `Sprockets` is configured to do so.
+* Enables compression if `Sprockets` is configured to do so;
+* Added Rails and Sprockets tests.
 
-### 0.2.0 (211-07-14)
+### 0.2.0 (2011-07-14)
 [Compare view](https://github.com/lucasmazza/ruby-stylus/compare/v0.1.2...v0.2.0)
 
 * Replaced `stylus:install` with proper generators for Rails 3.1 - now all hooks for the `stylesheet_engine` will generate `.styl` files.

@@ -37,6 +37,13 @@ describe Stylus do
     Stylus.compile(input).should == output
   end
 
+  it 'implicit imports the given paths' do
+    path = File.expand_path('mixins/vendor.styl', fixture_root)
+    input, output = fixture :implicit
+    Stylus.import path
+    Stylus.compile(input).should == output
+  end
+
   it "outputs both gem and library version" do
     Stylus.version.should =~ /Stylus - gem .+ library .+/
   end
@@ -53,7 +60,38 @@ describe Stylus do
 
   it "includes the given plugins" do
     Stylus.use :nib
+    input, output = fixture :plugin
+    Stylus.compile(input).should == output
+  end
+
+  it "includes and imports 'nib' automatically" do
+    Stylus.nib = true
     input, output = fixture :nib
     Stylus.compile(input).should == output
+  end
+
+  describe "The debug flag" do
+
+    let(:path) { fixture_path(:debug) }
+    let(:fixture) { File.read(path) }
+    let(:file) { File.new(path) }
+
+    before { Stylus.debug = true }
+
+    it "turns the 'linenos' option on" do
+      Stylus.compile(file).should match(/line 1 : #{path}/)
+    end
+
+    it "skips the 'linenos' option if no filename is given" do
+      Stylus.compile(fixture).should_not match(/line 1 : #{path}/)
+    end
+
+    it "turns the 'firebug' option on" do
+      Stylus.compile(file).should match(/@media -stylus-debug-info/)
+    end
+
+    it "skips the 'firebug' option if no filename is given" do
+      Stylus.compile(fixture).should_not match(/@media -stylus-debug-info/)
+    end
   end
 end

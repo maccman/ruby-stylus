@@ -24,8 +24,10 @@ require 'stylus/railtie' if defined?(::Rails)
 module Stylus
   class << self
     @@compress = false
-    @@paths = []
-    @@plugins = {}
+    @@debug    = false
+    @@paths    = []
+    @@imports  = []
+    @@plugins  = {}
 
     # Stores a list of plugins to import inside `Stylus`, with an optional hash.
     def use(*options)
@@ -36,7 +38,16 @@ module Stylus
     end
     alias :plugin :use
 
-    # Retrieves all the registered plugins registered.
+    # Stores a list of stylesheets to import on every compile process.
+    def import(*paths)
+      if paths.any?
+      @@imports = @@imports.concat(paths)
+    end
+    @@imports
+  end
+  alias :imports :import
+
+    # Retrieves all the registered plugins.
     def plugins
       @@plugins
     end
@@ -51,22 +62,48 @@ module Stylus
       @@paths = Array(val)
     end
 
+    # Returns the `debug` flag used to set the `linenos` and `firebug` option for Stylus.
+    def debug
+      @@debug
+    end
+    alias :debug? :debug
+
+    # Marks the `nib` plugin to be loaded and included on every stylesheet.
+    def nib=(flag)
+      if flag
+        use :nib
+        import :nib
+      end
+    end
+
+    # Sets the `debug` flag.
+    def debug=(val)
+      @@debug = val
+    end
+
     # Returns the global compress flag.
     def compress
       @@compress
     end
+    alias :compress? :compress
 
     # Sets the global flag for the `compress` option.
     def compress=(val)
       @@compress = val
     end
 
-    # Compiles a given input - a `File`, `StringIO`, `String` or anything that responds to `read`.
-    # Also accepts a hash of options that will be merged with the global configuration.
+    # Compiles a given input - a plain String, `File` or some sort of IO object that
+    # responds to `read`.
+    # It accepts a hash of options that will be merged with the global configuration.
+    # If the source has a `path`, it will be expanded and used as the :filename option
+    # So the debug options can be used.
     def compile(source, options = {})
-      source = source.read if source.respond_to?(:read)
+      if source.respond_to?(:path) && source.path
+        options[:filename] ||= File.expand_path(source.path)
+      end
+      source  = source.read if source.respond_to?(:read)
       options = merge_options(options)
-      context.call('compiler', source, options, plugins)
+      context.call('compiler', source, options, plugins, imports)
     end
 
     # Converts back an input of plain CSS to the `Stylus` syntax. The source object can be
@@ -77,17 +114,29 @@ module Stylus
     end
 
     # Returns a `Hash` of the given `options` merged with the default configuration.
-    # It also concats the global load path with a given `Array`.
+    # It also concats the global load path with a given `:paths` option.
     def merge_options(options)
-      _paths = options.delete(:paths)
+      filename = options[:filename]
+
+      _paths  = options.delete(:paths)
       options = defaults.merge(options)
       options[:paths] = paths.concat(Array(_paths))
+      if filename
+        options = options.merge(debug_options)
+      end
       options
     end
 
-    # Returns the default `Hash` of options.
+    # Returns the default `Hash` of options:
+    # the compress flag and the global load path.
     def defaults
-      { :compress => self.compress, :paths => self.paths }
+      { :compress => self.compress?, :paths => self.paths }
+    end
+
+    # Returns a Hash with the debug options to pass to
+    # Stylus.
+    def debug_options
+      { :linenos => self.debug?, :firebug => self.debug? }
     end
 
     # Return the gem version alongside with the current `Stylus` version of your system.
@@ -106,10 +155,14 @@ module Stylus
       File.read(File.expand_path('../stylus/compiler.js',__FILE__))
     end
 
-    # We're targeting the Runtime directly so we don't mess with other
-    # gems using `ExecJS`.
+    # `ExecJS` 1.2.5+ doesn't support `require` statements on node anymore,
+    # so we use a new instance of the `ExternalRuntime` with the old runner script.
     def backend
-      @@_backend ||= ExecJS::Runtimes::Node
+      @@_backend ||= ExecJS::ExternalRuntime.new(
+        :name        => 'Node.js (V8)',
+        :command     => ["nodejs", "node"],
+        :runner_path => File.expand_path("../stylus/runner.js", __FILE__)
+        )
     end
   end
 
